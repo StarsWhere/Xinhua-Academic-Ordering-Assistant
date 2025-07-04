@@ -119,7 +119,7 @@ def create_login_view(app):
     ttk.Checkbutton(options_frame, text="保存密码", variable=save_credentials_var).pack(side=tk.LEFT)
     
     allow_logging_var = tk.BooleanVar(value=app.settings.get("allow_data_collection"))
-    ttk.Checkbutton(options_frame, text="允许收集日志数据", variable=allow_logging_var).pack(side=tk.LEFT, padx=(20, 0))
+    ttk.Checkbutton(options_frame, text="协助优化", variable=allow_logging_var).pack(side=tk.LEFT, padx=(20, 0))
 
     # 预填充数据
     if save_credentials_var.get():
