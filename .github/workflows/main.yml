@@ -17,7 +17,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.x' # 使用最新的Python 3版本
+        python-version: '3.9' # 使用最新的Python 3版本
 
     - name: Install dependencies
       run: |
@@ -27,20 +27,20 @@ jobs:
 
     - name: Build client with PyInstaller
       run: |
-        pyinstaller client/run.py --onefile --noconsole --name "新华传媒教材征订助手"
+        pyinstaller client/run.py --onefile --noconsole --name "Xinhua-Academic-Ordering-Assistant"
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: 新华传媒教材征订助手-Windows
-        path: dist/新华传媒教材征订助手.exe
+        name: Xinhua-Academic-Ordering-Assistant-Windows
+        path: dist/Xinhua-Academic-Ordering-Assistant.exe
 
     - name: Create Release
       id: create_release
       uses: softprops/action-gh-release@v2
       if: startsWith(github.ref, 'refs/tags/')
       with:
-        files: dist/新华传媒教材征订助手.exe
+        files: dist/Xinhua-Academic-Ordering-Assistant.exe
         name: Release ${{ github.ref_name }}
         body: |
           此版本包含 Windows 客户端可执行文件。
