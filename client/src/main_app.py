@@ -7,10 +7,14 @@ import os
 import json
 import hashlib
 import logging
+import webbrowser # 新增导入，用于打开链接
 
 from .settings import AppSettings
 from .api_client import ApiClient
 from .ui import base_view, login_view, book_view, order_view, user_view
+
+# [新增] 客户端版本号
+CLIENT_VERSION = "1.0.0" 
 
 class ISBNApp:
     """
@@ -44,8 +48,12 @@ class ISBNApp:
         
         # --- 启动 ---
         base_view.setup_styles()
-        if not self.try_auto_login():
+        # [修改] 自动登录后也检查更新
+        if self.try_auto_login():
+            self._post_login_actions()
+        else:
             self.show_login_page()
+            self._check_for_updates_on_startup() # 在登录页面也检查更新，让用户知道有新版本
 
     def center_window(self):
         self.root.update_idletasks()
@@ -54,6 +62,68 @@ class ISBNApp:
         x = (self.root.winfo_screenwidth() // 2) - (width // 2)
         y = (self.root.winfo_screenheight() // 2) - (height // 2)
         self.root.geometry(f'{width}x{height}+{x}+{y}')
+
+    # [新增] 登录后的通用处理
+    def _post_login_actions(self):
+        # 自动登录后同样检查手机号
+        if not self.api_client.student_info.get('mobile'):
+            messagebox.showinfo("提示", "您的账户尚未绑定手机号，请先绑定。")
+            self.show_bind_phone_page()
+        else:
+            self.show_book_selection_page()
+        self._check_for_updates_on_startup() # 登录成功后也检查更新
+
+    # [新增] 检查版本更新
+    def _check_for_updates_on_startup(self):
+        def task():
+            logging.info(f"当前客户端版本: {CLIENT_VERSION}")
+            update_info = self.api_client.check_for_updates(CLIENT_VERSION)
+            if update_info and update_info.get("shouldUpdate"):
+                release_note = update_info.get("releaseNote", "无详细更新说明。")
+                latest_version_url = update_info.get("latestVersionUrl", "")
+
+                dialog = tk.Toplevel(self.root)
+                dialog.title("新版本可用")
+                dialog.transient(self.root)
+                dialog.grab_set() # 模态窗口
+                dialog.geometry("500x400")
+                dialog.resizable(False, False)
+                
+                # 居中显示
+                dialog.update_idletasks()
+                x = (self.root.winfo_screenwidth() // 2) - (dialog.winfo_width() // 2)
+                y = (self.root.winfo_screenheight() // 2) - (dialog.winfo_height() // 2)
+                dialog.geometry(f"+{x}+{y}")
+
+                main_frame = ttk.Frame(dialog, padding=15)
+                main_frame.pack(fill="both", expand=True)
+                main_frame.grid_rowconfigure(1, weight=1)
+                main_frame.grid_columnconfigure(0, weight=1)
+
+                ttk.Label(main_frame, text="发现新版本！", style="Title.TLabel").grid(row=0, column=0, pady=(0, 10))
+
+                text_widget = tk.Text(main_frame, wrap=tk.WORD, font=("微软雅黑", 10), relief="solid", borderwidth=1, padx=5, pady=5)
+                text_widget.insert(tk.END, release_note)
+                text_widget.config(state=tk.DISABLED)
+                text_widget.grid(row=1, column=0, sticky="nsew", pady=(0, 10))
+
+                # Add a scrollbar to the text widget
+                scrollbar = ttk.Scrollbar(main_frame, command=text_widget.yview)
+                scrollbar.grid(row=1, column=1, sticky="ns")
+                text_widget.config(yscrollcommand=scrollbar.set)
+
+                button_frame = ttk.Frame(main_frame)
+                button_frame.grid(row=2, column=0, columnspan=2, pady=(10, 0))
+
+                if latest_version_url:
+                    ttk.Button(button_frame, text="立即更新", command=lambda: webbrowser.open_new(latest_version_url)).pack(side=tk.LEFT, padx=5)
+                ttk.Button(button_frame, text="稍后更新", command=dialog.destroy).pack(side=tk.LEFT, padx=5)
+            else:
+                logging.info("当前是最新版本或无法获取更新信息。")
+        
+        # 启动一个新线程来执行网络请求，避免阻塞UI
+        import threading
+        threading.Thread(target=task, name="VersionCheckThread", daemon=True).start()
 
     # region 页面导航
     def show_login_page(self):
@@ -101,13 +171,7 @@ class ISBNApp:
                 return False
 
             logging.info("会话有效,自动登录成功。")
-            # 自动登录后同样检查手机号
-            if not self.api_client.student_info.get('mobile'):
-                messagebox.showinfo("提示", "您的账户尚未绑定手机号，请先绑定。")
-                self.show_bind_phone_page()
-            else:
-                self.show_book_selection_page()
-            return True
+            return True # 成功登录，后续由 _post_login_actions 处理页面跳转和更新检查
         except Exception as e:
             logging.error(f"加载会话文件时出错: {e}。")
             self.clear_session_data()
@@ -164,12 +228,8 @@ class ISBNApp:
                 student_id = result.get("data")
                 if self.get_student_info(student_id):
                     self.save_session_data()
-                    # 核心逻辑：检查是否绑定手机
-                    if not self.api_client.student_info.get('mobile'):
-                        messagebox.showinfo("需要绑定手机", "登录成功！\n为了您的账户安全，请先绑定手机号。")
-                        self.show_bind_phone_page()
-                    else:
-                        self.show_book_selection_page()
+                    # 核心逻辑：检查是否绑定手机并检查更新
+                    self._post_login_actions()
             else:
                 messagebox.showerror("登录失败", result.get("errorMsg", "未知错误"))
                 self.show_login_page()

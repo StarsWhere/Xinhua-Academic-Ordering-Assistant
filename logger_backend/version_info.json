@@ -1,0 +1,5 @@
+{
+    "latestVersionNumber": "1.1.0",
+    "latestVersionUrl": "https://example.com/latest-app-v2.1.0.zip",
+    "releaseNote": "## Version 1.1.0 新增功能与优化\n\n- **OCR功能迁移至后端**：现在验证码识别通过您的私有部署后端代理进行，增强了数据隐私与安全性。\n- **版本更新自动推送**：应用启动时将自动检测新版本，并提示更新信息，确保您始终使用最新功能。"
+}

@@ -16,7 +16,10 @@ class ApiClient:
         self.settings = settings
         self.session = requests.Session()
         self.base_url = "https://univ.xinhua.sh.cn"
-        self.log_api_url = "https://api.school.starswhere.xyz:44/log" # 您的数据收集后端地址
+        # [修改] 统一管理自定义后端服务的地址
+        # 开发时，如果后端在docker-compose中，地址可能是 http://localhost:6656
+        # 部署时，此地址应为您的实际后端域名或IP
+        self.base_backend_url = "https://api.school.starswhere.xyz:44" # 您的数据收集后端地址 (现在也用于OCR和版本检查)
         self.student_info = {}
 
     def get_api_headers(self, referer_path=""):
@@ -52,8 +55,9 @@ class ApiClient:
                 "error": error_msg
             }
             try:
-                logging.info(f"正在向日志API发送数据: {self.log_api_url}")
-                requests.post(self.log_api_url, json=log_data, timeout=10)
+                logging.info(f"正在向日志API发送数据: {self.base_backend_url}/log")
+                # [修改] 使用统一的base_backend_url
+                requests.post(f"{self.base_backend_url}/log", json=log_data, timeout=10)
                 logging.info("日志数据发送成功。")
             except requests.exceptions.RequestException as e:
                 logging.error(f"发送日志到API失败: {e}")
@@ -135,3 +139,40 @@ class ApiClient:
         params = {"mobile": mobile_no, "code": validate_code}
         headers = self.get_api_headers("setPwd.do")
         return self.api_request("GET", url, event_type="BIND_PHONE", params=params, headers=headers, timeout=10)
+
+    # [新增] 调用后端OCR服务
+    def call_ocr_service(self, image_base64: str):
+        """
+        调用后端OCR服务识别验证码。
+        :param image_base64: 验证码图片的base64编码字符串。
+        :return: 识别结果字典或None。
+        """
+        ocr_url = f"{self.base_backend_url}/ocr_captcha"
+        headers = {'Content-Type': 'application/json'}
+        payload = {"imageBase64": image_base64}
+        
+        try:
+            logging.info(f"正在通过后端代理调用OCR服务: {ocr_url}")
+            response = requests.post(ocr_url, json=payload, headers=headers, timeout=10)
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.RequestException as e:
+            logging.error(f"调用后端OCR服务失败: {e}")
+            return None
+
+    # [新增] 调用后端版本检查服务
+    def check_for_updates(self, client_version: str):
+        """
+        调用后端服务检查是否有新版本。
+        :param client_version: 客户端当前版本号。
+        :return: 更新信息字典或None。
+        """
+        version_check_url = f"{self.base_backend_url}/version_check?client_version={client_version}"
+        try:
+            logging.info(f"正在检查版本更新: {version_check_url}")
+            response = requests.get(version_check_url, timeout=10)
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.RequestException as e:
+            logging.error(f"调用版本检查服务失败: {e}")
+            return None

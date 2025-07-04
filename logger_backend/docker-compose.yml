@@ -1,13 +1,13 @@
 version: '3.8'
 
 services:
-  # 我们的FastAPI应用
   api:
     build: .
     ports:
       - "6656:8000"
     environment:
       - MONGO_URI=mongodb://mongodb:27017/
+      - OCR_API_URL=https://ocr.xiaoying.life/v1/school-captcha # 新增OCR后端服务地址
     depends_on:
       - mongodb
     volumes:
