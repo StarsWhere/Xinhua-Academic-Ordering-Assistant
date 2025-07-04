@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  # 我们的FastAPI应用
+  api:
+    build: .
+    ports:
+      - "6656:8000"
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/
+    depends_on:
+      - mongodb
+    volumes:
+      - ./app:/code/app
+    networks:
+      - app-network
+
+  # MongoDB数据库服务
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      # [修改] 将数据持久化到当前目录下的 mongo-data 文件夹中
+      - ./mongo-data:/data/db
+    networks:
+      - app-network
+
+# [删除] 我们不再需要顶层的 volumes 定义，因为它现在是绑定挂载
+# volumes:
+#   mongo-data:
+
+networks:
+  app-network:
+    driver: bridge
