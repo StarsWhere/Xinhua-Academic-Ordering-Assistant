@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import tkinter as tk
 from tkinter import ttk
 
@@ -10,19 +9,15 @@ def clear_frame(frame):
 def create_centered_content_frame(root):
     """
     创建一个占据整个窗口的基础框架，并返回一个位于其中央的、用于放置实际内容的子框架。
-    这解决了主内容区域周围有白边的问题。
     """
     clear_frame(root)
     
-    # 基础框架，会填满整个窗口
     base_frame = ttk.Frame(root, padding=0)
     base_frame.grid(row=0, column=0, sticky='nsew')
     
-    # 配置网格，使中间的单元格(0,0)占据所有额外空间，从而实现居中
     base_frame.grid_rowconfigure(0, weight=1)
     base_frame.grid_columnconfigure(0, weight=1)
     
-    # 内容容器，所有页面的组件都应放置在此框架内
     content_container = ttk.Frame(base_frame)
     content_container.grid(row=0, column=0)
     

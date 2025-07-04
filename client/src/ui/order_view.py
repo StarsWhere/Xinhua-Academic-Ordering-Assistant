@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import tkinter as tk
 from tkinter import ttk, messagebox
 from PIL import Image, ImageTk
@@ -70,7 +69,7 @@ def create_order_history_view(app):
 
 
 def create_order_detail_view(app, order_id):
-    """创建并显示单个订单的详情界面,包含内嵌二维码支付功能。"""
+    """创建并显示单个订单的详情界面，包含内嵌二维码支付功能。"""
     from .base_view import clear_frame
 
     clear_frame(app.root)
@@ -81,7 +80,6 @@ def create_order_detail_view(app, order_id):
     main_frame.grid_rowconfigure(0, weight=1)
     main_frame.grid_columnconfigure(0, weight=1)
     
-    # --- 内部函数 ---
     def load_order_details():
         for i in order_detail_tree.get_children(): order_detail_tree.delete(i)
         response = app.get_order_details(order_id)
@@ -161,7 +159,6 @@ def create_order_detail_view(app, order_id):
             if order_data:
                 if str(order_data.get('paid')).lower() == 'true' or order_data.get('status') == '已支付':
                     status_label.config(text=f"支付成功! 已支付金额:¥{order_data.get('payAmount', 0):.2f}", style="Success.TLabel")
-                    # 延迟2秒后自动返回订单详情并刷新
                     qr_code_display_frame.after(2000, lambda: (hide_payment_qr(), load_order_details()))
                 else:
                     status_label.config(text="订单尚未支付，请完成支付后再次刷新", style="Error.TLabel")
@@ -198,20 +195,16 @@ def create_order_detail_view(app, order_id):
         
         threading.Thread(target=refresh_task, daemon=True).start()
 
-    # --- UI 绘制 ---
-    # 主内容框架
     content_frame = ttk.Frame(main_frame)
     content_frame.grid(row=0, column=0, sticky='nsew')
     content_frame.grid_rowconfigure(2, weight=1)
     content_frame.grid_columnconfigure(0, weight=1)
 
-    # 二维码显示框架(默认隐藏),负责将内部内容居中
     qr_code_display_frame = ttk.Frame(main_frame)
     qr_code_display_frame.grid(row=0, column=0, sticky='nsew')
     qr_code_display_frame.grid_rowconfigure(0, weight=1)
     qr_code_display_frame.grid_columnconfigure(0, weight=1)
     
-    # 包含所有二维码页面控件的内部框架
     qr_inner_frame = ttk.Frame(qr_code_display_frame)
     qr_inner_frame.grid(row=0, column=0) 
     
@@ -224,11 +217,9 @@ def create_order_detail_view(app, order_id):
     qr_image_label = ttk.Label(qr_inner_frame)
     qr_image_label.grid(row=2, column=0, sticky='nsew')
     
-    # 状态提示标签
     status_label = ttk.Label(qr_inner_frame, text="请使用对应的支付应用扫描上方二维码完成支付", style="Info.TLabel")
     status_label.grid(row=3, column=0, pady=10)
     
-    # 二维码页面的按钮组
     qr_buttons_frame = ttk.Frame(qr_inner_frame)
     qr_buttons_frame.grid(row=4, column=0, pady=10)
     
@@ -279,15 +270,11 @@ def create_order_detail_view(app, order_id):
 
     qr_code_display_frame.bind('<Configure>', resize_qr_image)
     
-    # =================================================================
-    # == 核心修复:重新添加对 qr_inner_frame 内部空间的管理规则       ==
-    # =================================================================
     qr_inner_frame.grid_columnconfigure(0, weight=1)
-    qr_inner_frame.grid_rowconfigure(2, weight=1) # 关键:只让图片所在的第2行扩展
+    qr_inner_frame.grid_rowconfigure(2, weight=1)
 
     qr_code_display_frame.grid_remove()
 
-    # -- 主内容UI组件 --
     ttk.Label(content_frame, text=f"订单详情 (订单号: {order_id})", style='Title.TLabel').grid(row=0, column=0, sticky="w")
     
     order_info_panel = ttk.LabelFrame(content_frame, text="订单概览", padding="10")

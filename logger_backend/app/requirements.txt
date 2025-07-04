@@ -1,5 +1,5 @@
-fastapi==0.111.0 # [推荐] 锁定 FastAPI 版本，避免未来不兼容
-uvicorn[standard]==0.30.1 # [推荐] 锁定 Uvicorn 版本
-pymongo==4.8.0 # [推荐] 锁定 PyMongo 版本
-pydantic==2.8.2 # [修改] 明确指定Pydantic的最新稳定V2版本
-requests==2.32.3 # [推荐] 锁定 Requests 版本，避免未来不兼容
+fastapi==0.111.0
+uvicorn[standard]==0.30.1
+pymongo==4.8.0
+pydantic==2.8.2
+requests==2.32.3

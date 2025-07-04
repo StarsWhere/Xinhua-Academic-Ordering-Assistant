@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import requests
 import logging
 import json
@@ -8,18 +7,13 @@ import threading
 class ApiClient:
     """
     封装所有对新华传媒平台API的请求。
-    - 管理 `requests.Session`。
-    - 统一处理API请求和响应。
-    - 根据用户设置决定是否上报日志。
+    管理 `requests.Session`，统一处理API请求和响应，并根据用户设置决定是否上报日志。
     """
     def __init__(self, settings):
         self.settings = settings
         self.session = requests.Session()
         self.base_url = "https://univ.xinhua.sh.cn"
-        # [修改] 统一管理自定义后端服务的地址
-        # 开发时，如果后端在docker-compose中，地址可能是 http://localhost:6656
-        # 部署时，此地址应为您的实际后端域名或IP
-        self.base_backend_url = "https://api.school.starswhere.xyz:44" # 您的数据收集后端地址 (现在也用于OCR和版本检查)
+        self.base_backend_url = "https://api.school.starswhere.xyz:44" # 数据收集、OCR和版本检查后端地址
         self.student_info = {}
 
     def get_api_headers(self, referer_path=""):
@@ -55,10 +49,7 @@ class ApiClient:
                 "error": error_msg
             }
             try:
-                logging.info(f"正在向日志API发送数据: {self.base_backend_url}/log")
-                # [修改] 使用统一的base_backend_url
                 requests.post(f"{self.base_backend_url}/log", json=log_data, timeout=10)
-                logging.info("日志数据发送成功。")
             except requests.exceptions.RequestException as e:
                 logging.error(f"发送日志到API失败: {e}")
         
@@ -77,7 +68,6 @@ class ApiClient:
         }
         
         try:
-            logging.info(f"发起 {method} 请求: {url}")
             response = self.session.request(method, url, **kwargs)
             response.raise_for_status()
             
@@ -107,10 +97,7 @@ class ApiClient:
                 response_info = {"status_code": e.response.status_code, "body": body}
             
             self._log_to_external_api(event_type + "_FAIL", request_info, response_info, error_msg)
-            # 在主线程中返回错误,以便UI可以响应
             return e.response if e.response is not None else None
-
-    # --- 新增的API方法 ---
 
     def send_forget_password_code(self, student_code, mobile_no):
         """为忘记密码功能发送短信验证码。"""
@@ -140,7 +127,6 @@ class ApiClient:
         headers = self.get_api_headers("setPwd.do")
         return self.api_request("GET", url, event_type="BIND_PHONE", params=params, headers=headers, timeout=10)
 
-    # [新增] 调用后端OCR服务
     def call_ocr_service(self, image_base64: str):
         """
         调用后端OCR服务识别验证码。
@@ -160,7 +146,6 @@ class ApiClient:
             logging.error(f"调用后端OCR服务失败: {e}")
             return None
 
-    # [新增] 调用后端版本检查服务
     def check_for_updates(self, client_version: str):
         """
         调用后端服务检查是否有新版本。

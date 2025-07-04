@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import tkinter as tk
 from tkinter import messagebox
 from tkinter import ttk
@@ -7,53 +6,43 @@ import os
 import json
 import hashlib
 import logging
-import webbrowser # 新增导入，用于打开链接
+import webbrowser
 
 from .settings import AppSettings
 from .api_client import ApiClient
 from .ui import base_view, login_view, book_view, order_view, user_view
 
-# [新增] 客户端版本号
-CLIENT_VERSION = "1.0.0" 
+CLIENT_VERSION = "1.1.0" 
 
 class ISBNApp:
     """
-    新华传媒教材征订平台GUI应用 - 主调度类。
-    - 初始化应用资源(窗口、设置、API客户端)。
-    - 管理用户会话(登录、登出、自动登录)。
-    - 调度不同视图(UI界面)的显示。
-    - 处理核心业务逻辑(如下单、获取订��详情)。
+    新华传媒教材征订平台GUI应用主调度类。
+    负责初始化应用、管理用户会话、调度视图显示及处理核心业务逻辑。
     """
     def __init__(self, root):
         self.root = root
         self.root.title("新华传媒教材征订平台")
         self.root.geometry("1000x750")
         
-        # 配置根窗口网格布局,使其子元素可以随窗口缩放
         self.root.grid_rowconfigure(0, weight=1)
         self.root.grid_columnconfigure(0, weight=1)
 
         self.center_window()
         
-        # --- 核心组件 ---
         self.settings = AppSettings()
         self.api_client = ApiClient(self.settings)
-        
         self.session_file = "session_data.json"
         
-        # --- UI相关状态 ---
         self.book_widgets = {}
         self.all_books_data = []
         self.current_order_data = None
         
-        # --- 启动 ---
         base_view.setup_styles()
-        # [修改] 自动登录后也检查更新
         if self.try_auto_login():
             self._post_login_actions()
         else:
             self.show_login_page()
-            self._check_for_updates_on_startup() # 在登录页面也检查更新，让用户知道有新版本
+            self._check_for_updates_on_startup()
 
     def center_window(self):
         self.root.update_idletasks()
@@ -63,18 +52,17 @@ class ISBNApp:
         y = (self.root.winfo_screenheight() // 2) - (height // 2)
         self.root.geometry(f'{width}x{height}+{x}+{y}')
 
-    # [新增] 登录后的通用处理
     def _post_login_actions(self):
-        # 自动登录后同样检查手机号
+        """登录后的通用处理，包括检查手机号绑定和版本更新。"""
         if not self.api_client.student_info.get('mobile'):
             messagebox.showinfo("提示", "您的账户尚未绑定手机号，请先绑定。")
             self.show_bind_phone_page()
         else:
             self.show_book_selection_page()
-        self._check_for_updates_on_startup() # 登录成功后也检查更新
+        self._check_for_updates_on_startup()
 
-    # [新增] 检查版本更新
     def _check_for_updates_on_startup(self):
+        """在启动时检查版本更新并显示提示。"""
         def task():
             logging.info(f"当前客户端版本: {CLIENT_VERSION}")
             update_info = self.api_client.check_for_updates(CLIENT_VERSION)
@@ -85,11 +73,10 @@ class ISBNApp:
                 dialog = tk.Toplevel(self.root)
                 dialog.title("新版本可用")
                 dialog.transient(self.root)
-                dialog.grab_set() # 模态窗口
+                dialog.grab_set()
                 dialog.geometry("500x400")
                 dialog.resizable(False, False)
                 
-                # 居中显示
                 dialog.update_idletasks()
                 x = (self.root.winfo_screenwidth() // 2) - (dialog.winfo_width() // 2)
                 y = (self.root.winfo_screenheight() // 2) - (dialog.winfo_height() // 2)
@@ -107,7 +94,6 @@ class ISBNApp:
                 text_widget.config(state=tk.DISABLED)
                 text_widget.grid(row=1, column=0, sticky="nsew", pady=(0, 10))
 
-                # Add a scrollbar to the text widget
                 scrollbar = ttk.Scrollbar(main_frame, command=text_widget.yview)
                 scrollbar.grid(row=1, column=1, sticky="ns")
                 text_widget.config(yscrollcommand=scrollbar.set)
@@ -121,11 +107,9 @@ class ISBNApp:
             else:
                 logging.info("当前是最新版本或无法获取更新信息。")
         
-        # 启动一个新线程来执行网络请求，避免阻塞UI
         import threading
         threading.Thread(target=task, name="VersionCheckThread", daemon=True).start()
 
-    # region 页面导航
     def show_login_page(self):
         base_view.clear_frame(self.root)
         login_view.create_login_view(self)
@@ -152,10 +136,9 @@ class ISBNApp:
 
     def go_back_to_login(self):
         self.show_login_page()
-    # endregion
 
-    # region 会话管理 (Session)
     def try_auto_login(self):
+        """尝试自动登录。"""
         if not os.path.exists(self.session_file):
             return False
         try:
@@ -171,13 +154,14 @@ class ISBNApp:
                 return False
 
             logging.info("会话有效,自动登录成功。")
-            return True # 成功登录，后续由 _post_login_actions 处理页面跳转和更新检查
+            return True
         except Exception as e:
             logging.error(f"加载会话文件时出错: {e}。")
             self.clear_session_data()
             return False
 
     def validate_session(self, student_id):
+        """验证当前会话是否有效。"""
         url = f"{self.api_client.base_url}/api/GetStudentInfo.do"
         param = {"studentID": student_id}
         headers = self.api_client.get_api_headers("myBook.do")
@@ -190,6 +174,7 @@ class ISBNApp:
         return False
 
     def save_session_data(self):
+        """保存会话数据到文件。"""
         data_to_save = {
             "cookies": self.api_client.session.cookies.get_dict(),
             "student_info": self.api_client.student_info
@@ -201,20 +186,21 @@ class ISBNApp:
             logging.error(f"保存会话数据失败: {e}")
 
     def clear_session_data(self):
+        """清除本地会话数据。"""
         self.api_client.session = requests.Session()
         self.api_client.student_info = {}
         if os.path.exists(self.session_file):
             os.remove(self.session_file)
 
     def logout(self):
+        """执行用户登出操作。"""
         logging.info("正在登出...")
         self.clear_session_data()
         messagebox.showinfo("登出", "您已成功登出。")
         self.show_login_page()
-    # endregion
 
-    # region 核心业务逻辑
     def login(self, student_no, password, verify_code):
+        """处理用户登录逻辑。"""
         md5_password = hashlib.md5(password.encode('utf-8')).hexdigest()
         login_data = {"univ": "应用技术大学", "studentNo": student_no, "pwd": md5_password, "verifyCode": verify_code}
         headers = self.api_client.get_api_headers("login.do?univ=YJ")
@@ -228,7 +214,6 @@ class ISBNApp:
                 student_id = result.get("data")
                 if self.get_student_info(student_id):
                     self.save_session_data()
-                    # 核心逻辑：检查是否绑定手机并检查更新
                     self._post_login_actions()
             else:
                 messagebox.showerror("登录失败", result.get("errorMsg", "未知错误"))
@@ -237,8 +222,8 @@ class ISBNApp:
             messagebox.showerror("登录失败", "网络错误或服务器无响应。")
             self.show_login_page()
 
-
     def get_student_info(self, student_id):
+        """获取学生信息。"""
         url = f"{self.api_client.base_url}/api/GetStudentInfo.do"
         param = {"studentID": student_id}
         headers = self.api_client.get_api_headers("myBook.do")
@@ -251,8 +236,8 @@ class ISBNApp:
         messagebox.showerror("错误", "无法获取学生信息。")
         return False
         
-    # --- 新增的业务逻辑处理方法 ---
     def handle_send_forget_password_code(self, student_code, mobile_no):
+        """处理发送忘记密码验证码。"""
         response = self.api_client.send_forget_password_code(student_code, mobile_no)
         if response and response.status_code == 200:
             result = response.json()
@@ -264,6 +249,7 @@ class ISBNApp:
             messagebox.showerror("网络错误", "发送验证码请求失败。")
 
     def handle_reset_password(self, student_code, mobile_no, validate_code):
+        """处理重置密码。"""
         response = self.api_client.reset_password(student_code, mobile_no, validate_code)
         if response and response.status_code == 200:
             result = response.json()
@@ -276,6 +262,7 @@ class ISBNApp:
             messagebox.showerror("网络错误", "重置密码请求失败。")
 
     def handle_send_bind_phone_code(self, mobile_no):
+        """处理发送绑定手机验证码。"""
         response = self.api_client.send_bind_phone_code(mobile_no)
         if response and response.status_code == 200:
             result = response.json()
@@ -287,15 +274,14 @@ class ISBNApp:
             messagebox.showerror("网络错误", "发送验证码请求失败。")
 
     def handle_bind_phone(self, mobile_no, validate_code):
+        """处理绑定手机。"""
         response = self.api_client.bind_phone(mobile_no, validate_code)
         if response and response.status_code == 200:
             result = response.json()
             if result.get("code") == "0":
                 messagebox.showinfo("成功", "手机绑定成功！")
-                # 更新本地信息并保存
                 self.api_client.student_info['mobile'] = mobile_no
                 self.save_session_data()
-                # 跳转到主页
                 self.show_book_selection_page()
             else:
                 messagebox.showerror("绑定失败", result.get("errorMsg", "未知错误"))
@@ -303,6 +289,7 @@ class ISBNApp:
             messagebox.showerror("网络错误", "绑定手机请求失败。")
 
     def place_order(self):
+        """提交教材订单。"""
         selected_books = [
             {"bookID": info['data'].get("bookID"), "courseNo": info['data'].get("courseNo"),
              "classNo": info['data'].get("classNo"), "course": info['data'].get("course"),
@@ -329,6 +316,7 @@ class ISBNApp:
                 messagebox.showerror("订购失败", result.get("errorMsg", "未知错误"))
     
     def get_order_details(self, order_id):
+        """获取订单详情。"""
         url = f"{self.api_client.base_url}/api/GetOrder.do"
         headers = self.api_client.get_api_headers(f"order.do?order_id={order_id}")
         param = {"studentID": self.api_client.student_info.get('studentID'), "orderID": order_id}
@@ -342,6 +330,7 @@ class ISBNApp:
         return None
 
     def get_payment_url(self, payment_type):
+        """获取支付链接。"""
         order_id = self.current_order_data.get('orderID')
         amount = self.current_order_data.get('amount', 0)
         
@@ -365,6 +354,7 @@ class ISBNApp:
         return None
 
     def cancel_order(self, order_id):
+        """取消订单。"""
         url = f"{self.api_client.base_url}/api/AbortOrder.do"
         headers = self.api_client.get_api_headers(f"order.do?order_id={order_id}")
         param = {"orderID": order_id, "studentID": self.api_client.student_info.get('studentID')}
@@ -380,10 +370,7 @@ class ISBNApp:
         return False
 
     def show_payment_confirmation(self, payment_type, callback):
-        """
-        显示支付确认界面,包含免责声明和强制阅读时间
-        """
-        # 创建模态对话框
+        """显示支付确认界面，包含免责声明和强制阅读时间。"""
         confirmation_window = tk.Toplevel(self.root)
         confirmation_window.title("支付确认")
         confirmation_window.geometry("600x500")
@@ -391,7 +378,6 @@ class ISBNApp:
         confirmation_window.grab_set()
         confirmation_window.resizable(False, False)
         
-        # 居中显示
         confirmation_window.update_idletasks()
         x = (confirmation_window.winfo_screenwidth() // 2) - (600 // 2)
         y = (confirmation_window.winfo_screenheight() // 2) - (500 // 2)

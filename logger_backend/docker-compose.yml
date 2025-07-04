@@ -7,7 +7,7 @@ services:
       - "6656:8000"
     environment:
       - MONGO_URI=mongodb://mongodb:27017/
-      - OCR_API_URL=https://ocr.xiaoying.life/v1/school-captcha # 新增OCR后端服务地址
+      # - OCR_API_URL=https://ocr.example.com/
     depends_on:
       - mongodb
     volumes:
@@ -15,20 +15,14 @@ services:
     networks:
       - app-network
 
-  # MongoDB数据库服务
   mongodb:
     image: mongo:latest
     ports:
       - "27017:27017"
     volumes:
-      # [修改] 将数据持久化到当前目录下的 mongo-data 文件夹中
       - ./mongo-data:/data/db
     networks:
       - app-network
-
-# [删除] 我们不再需要顶层的 volumes 定义，因为它现在是绑定挂载
-# volumes:
-#   mongo-data:
 
 networks:
   app-network:

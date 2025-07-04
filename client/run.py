@@ -1,10 +1,7 @@
-# -*- coding: utf-8 -*-
 import tkinter as tk
 from src.main_app import ISBNApp
 import logging
 
-# --- 配置日志记录 ---
-# 将日志配置放在主入口，确保在任何模块导入前生效
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(threadName)s - %(message)s',
@@ -15,7 +12,6 @@ logging.basicConfig(
 )
 
 if __name__ == "__main__":
-    # 捕获Tcl/Tk的内部错误，并记录到日志中
     def report_callback_exception(exc, val, tb):
         import traceback
         error_message = "".join(traceback.format_exception(exc, val, tb))

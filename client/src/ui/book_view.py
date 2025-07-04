@@ -1,13 +1,9 @@
-# -*- coding: utf-8 -*-
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 import csv
 
 def create_book_selection_view(app):
-    """
-    创建并显示教材选购的主界面。
-    :param app: 主ISBNApp实例。
-    """
+    """创建并显示教材选购的主界面。"""
     from .base_view import clear_frame
 
     clear_frame(app.root)
@@ -21,9 +17,7 @@ def create_book_selection_view(app):
 
     app.book_widgets = {}
 
-    # --- 内部函数 ---
     def load_book_list():
-        # 清理旧组件
         for widget in books_frame.winfo_children():
             widget.destroy()
         app.book_widgets.clear()
@@ -47,7 +41,6 @@ def create_book_selection_view(app):
         update_selection_info()
 
     def create_book_cards(books_data):
-        # ... (此部分逻辑与原文件相同)
         for i, book in enumerate(books_data):
             book_id = book.get("bookID")
             var = tk.BooleanVar(value=False)
@@ -56,7 +49,6 @@ def create_book_selection_view(app):
             card_frame = ttk.Frame(books_frame, borderwidth=1, relief="solid", padding=0)
             card_frame.pack(fill='x', padx=5, pady=5)
             
-            # 使用闭包来捕获正确的book_id
             def make_toggle_func(b_id):
                 return lambda event: toggle_selection(event, b_id)
             
@@ -88,7 +80,6 @@ def create_book_selection_view(app):
             stock_text, stock_color = (f"库存: {stock}", "green") if stock > 10 else ((f"仅剩: {stock}", "orange") if stock > 0 else ("缺货", "red"))
             ttk.Label(price_stock_frame, text=stock_text, foreground=stock_color).pack(anchor='e')
 
-            # 绑定点击事件到所有子组件
             for widget in [card_frame, check_frame, info_frame, price_stock_frame] + info_frame.winfo_children() + price_stock_frame.winfo_children():
                 widget.bind("<Button-1>", toggle_func)
         
@@ -111,7 +102,6 @@ def create_book_selection_view(app):
             card_frame.config(style="TFrame")
 
     def update_selection_info():
-        # ... (此部分逻辑与原文件相同)
         count = 0
         total_price = 0.0
         for book_id, info in app.book_widgets.items():
@@ -133,10 +123,9 @@ def create_book_selection_view(app):
         update_selection_info()
     
     def place_order():
-        app.place_order() # 回调主应用的下单方法
+        app.place_order()
         
     def export_book_data():
-        # ... (此部分逻辑与原文件相同)
         if not app.all_books_data:
             messagebox.showwarning("导出失败", "没有教材数据可导出！")
             return
@@ -157,8 +146,6 @@ def create_book_selection_view(app):
         except Exception as e:
             messagebox.showerror("导出失败", f"导出文件时发生错误: {e}")
             
-    # --- UI 绘制 ---
-    # 顶部信息栏
     top_frame = ttk.Frame(main_frame)
     top_frame.grid(row=0, column=0, sticky="ew", pady=(0, 10))
     user_info = f"欢迎您, {app.api_client.student_info.get('studentName', '')} ({app.api_client.student_info.get('studentNo', '')})"
@@ -171,7 +158,6 @@ def create_book_selection_view(app):
     ttk.Button(action_frame, text="历史订单", command=app.show_order_history_page).pack(side=tk.LEFT, padx=5)
     ttk.Button(action_frame, text="登出", command=app.logout).pack(side=tk.LEFT, padx=5)
     
-    # 卡片式教材列表区域
     list_container = ttk.LabelFrame(main_frame, text="可订购教材")
     list_container.grid(row=1, column=0, sticky="nsew")
     list_container.grid_rowconfigure(0, weight=1)
@@ -190,7 +176,6 @@ def create_book_selection_view(app):
     canvas.bind('<Configure>', lambda e: canvas.itemconfig(canvas_window, width=e.width))
     canvas.bind("<MouseWheel>", lambda e: canvas.yview_scroll(int(-1*(e.delta/120)), "units"))
     
-    # 底部操作栏
     bottom_frame = ttk.Frame(main_frame, padding=(0, 10))
     bottom_frame.grid(row=2, column=0, sticky="ew")
     
