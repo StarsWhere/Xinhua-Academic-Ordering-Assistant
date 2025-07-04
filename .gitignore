@@ -1,1 +1,6 @@
 **/__pycache__/**
+dist
+build
+.venv
+新华传媒教材征订助手.spec
+.gitignore

@@ -25,65 +25,69 @@
 *   支付确认流程（支付宝/微信，显示免责声明）
 *   日志记录（输出到 `app.log` 文件和控制台）
 
-### 运行方式
+### 如何使用 (开发/调试)
 
-1.  **安装依赖**:
+1.  **克隆仓库**:
     ```bash
-    # 进入客户端目录
-    cd client
-    # 建议在虚拟环境中安装
-    python -m venv venv
-    .\venv\Scripts\activate # Windows
-    # source venv/bin/activate # macOS/Linux
-    pip install -r requirements.txt
-    ```
-    (请注意：`requirements.txt` 文件在当前提供的文件列表中未直接显示，您可能需要手动创建或补充此文件，包含 `tkinter`, `requests`, `Pillow` 等依赖。)
-
-2.  **运行应用**:
-    ```bash
-    python run.py
+    git clone https://github.com/StarsWhere/ISBN.git # 假设您的仓库名为ISBN
+    cd ISBN
     ```
 
-## 日志后端 (`logger_backend/`)
+2.  **设置客户端环境**:
+    *   **进入客户端目录**:
+        ```bash
+        cd client
+        ```
+    *   **创建并激活虚拟环境** (推荐):
+        ```bash
+        python -m venv .venv
+        # Windows:
+        .\venv\Scripts\activate
+        # macOS/Linux:
+        # source .venv/bin/activate
+        ```
+    *   **安装依赖**:
+        ```bash
+        pip install -r requirements.txt
+        ```
+    *   **运行客户端**:
+        ```bash
+        python run.py
+        ```
+        客户端启动后，您将看到登录界面。
 
-### 描述
+3.  **设置日志后端环境**:
+    *   **确保已安装 Docker 和 Docker Compose**。
+    *   **进入日志后端目录**:
+        ```bash
+        cd logger_backend
+        ```
+    *   **启动服务**:
+        ```bash
+        docker-compose up --build -d
+        ```
+        这将构建 Docker 镜像，并启动 `api` 服务（FastAPI 应用）和 `mongodb` 服务。
+    *   **验证服务**:
+        打开浏览器或使用 `curl` 访问 `http://localhost:6656/`，您应该看到欢迎信息：
+        `{"message": "欢迎使用新华平台数据收集API - v2.1 (Pydantic V2 兼容版)"}`
 
-日志后端服务是一个轻量级的 API，用于接收客户端发送的日志数据，并将其存储到 MongoDB 数据库中。它使用 FastAPI 框架，并支持 Docker 部署。
-
-### 主要特性
-
-*   基于 FastAPI 构建，提供 RESTful API。
-*   接收并验证日志数据。
-*   将日志数据存储到 MongoDB。
-*   自动添加客户端 IP 和时间戳。
-*   支持 Docker 和 Docker Compose 部署。
-
-### 运行方式
-
-日志后端服务推荐使用 Docker Compose 运行，因为它包含了 MongoDB 数据库。
-
-1.  **确保已安装 Docker 和 Docker Compose**。
-
-2.  **进入日志后端目录**:
-    ```bash
-    cd logger_backend
-    ```
-
-3.  **启动服务**:
-    ```bash
-    docker-compose up --build -d
-    ```
-    这将构建 Docker 镜像，并启动 `api` 服务（FastAPI 应用）和 `mongodb` 服务。
-
-4.  **验证服务**:
-    打开浏览器或使用 `curl` 访问 `http://localhost:6656/`，您应该看到欢迎信息：
-    `{"message": "欢迎使用新华平台数据收集API - v2.1 (Pydantic V2 兼容版)"}`
-
-### API 端点
+### API 端点 (日志后端)
 
 *   **POST `/log`**: 接收并存储日志记录。
     *   请求体: `LogEntry` 模型 (包含 `level`, `message`, `timestamp`, `event_type`, `details` 等字段)。
 *   **GET `/`**: 健康检查端点。
+
+### 如何使用 (打包后的客户端)
+
+如果您只想运行客户端应用，可以使用打包好的可执行文件（仅限 Windows）。
+
+1.  **下载最新版本**:
+    从项目的 GitHub Releases 页面下载最新版本的 `新华传媒教材征订助手.exe` 文件。
+
+2.  **运行**:
+    双击下载的 `新华传媒教材征订助手.exe` 文件即可运行应用程序。无需安装 Python 或其他依赖。
+
+    **注意**: 打包后的客户端默认配置为连接 `https://api.school.starswhere.xyz:44/log` 作为日志后端。如果您希望使用自己的日志后端，需要修改客户端源代码并重新打包。
 
 ## 许可证
 

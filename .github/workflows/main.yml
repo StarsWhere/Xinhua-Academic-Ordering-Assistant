@@ -1,0 +1,50 @@
+name: Build and Release Client
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # 允许手动触发
+
+jobs:
+  build-windows-client:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x' # 使用最新的Python 3版本
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r client/requirements.txt
+        pip install pyinstaller
+
+    - name: Build client with PyInstaller
+      run: |
+        pyinstaller client/run.py --onefile --noconsole --name "新华传媒教材征订助手"
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: 新华传媒教材征订助手-Windows
+        path: dist/新华传媒教材征订助手.exe
+
+    - name: Create Release
+      id: create_release
+      uses: softprops/action-gh-release@v2
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: dist/新华传媒教材征订助手.exe
+        name: Release ${{ github.ref_name }}
+        body: |
+          此版本包含 Windows 客户端可执行文件。
+          
+          **注意：** 这是一个第三方工具，不代表官方新华传媒。
+        draft: false
+        prerelease: false
